@@ -1,0 +1,37 @@
+# Copyright 2020 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This tree's own build_overrides, edited freely (see build_overrides/dawn.gni
+# for the fuller rationale). Upstream Chromium's version imports
+# "//skia/features.gni"; this tree has no //skia, so that import is dropped.
+# tint_build_spv_writer is off alongside tint_build_spv_reader (upstream only
+# disables the reader) so Tint's SPIR-V writer/reader/validate targets are
+# compiled out entirely -- this tree builds Dawn D3D12-only (HLSL via Tint's
+# HLSL writer), so nothing needs SPIR-V, and that keeps spirv-tools /
+# spirv-headers out of the dependency graph instead of vendoring them.
+#
+# scripts/tint_overrides_with_defaults.gni reads build_with_chromium without
+# importing gclient_args.gni itself (upstream relies on Chromium's
+# //build/config/BUILDCONFIG.gn importing it globally; this tree's trimmed
+# BUILDCONFIG.gn does not). Importing it here works because GN merges an
+# imported file's top-level scope into the importer's, so it is visible by
+# the time tint_overrides_with_defaults.gni imports this file.
+import("//build/config/gclient_args.gni")
+
+tint_root_dir = "//third_party/dawn"
+tint_spirv_tools_dir = ""
+tint_googletest_dir = "//third_party/googletest/src"
+tint_spirv_headers_dir = ""
+
+tint_mesa_dir = "//third_party/dawn/third_party/mesa"
+
+tint_build_spv_reader = false
+tint_build_spv_writer = false
+tint_build_wgsl_reader = true
+tint_build_wgsl_writer = true
+
+# GLSL is only needed for the GL/GLES backends, which this tree does not
+# build (D3D12 only) -- keeps glslang out of the dependency graph too.
+tint_build_glsl_writer = false
+tint_build_glsl_validator = false

@@ -1,0 +1,63 @@
+# This file is used by the GN meta build system to find the root of the source
+# tree and to set startup options. For documentation on the values set in this
+# file, run "gn help dotfile" at the command line.
+#
+# Trimmed from //.gn of Chromium 151.0.7922.138 for the standalone base + mojo
+# tree: Chrome-specific default_args (v8 / webrtc / angle / vulkan / fuchsia /
+# pdfium / crashpad) are dropped because none of those projects exist here.
+# Everything that is generic build configuration stays in //build/config and is
+# unmodified.
+
+import("//build/dotfile_settings.gni")
+
+# The location of the build configuration file.
+buildconfig = "//build/config/BUILDCONFIG.gn"
+
+# The python interpreter to use by default. On Windows, this will look
+# for python3.exe and python3.bat.
+script_executable = "python3"
+
+# These arguments override the default values for items in a declare_args
+# block. "gn args" in turn can override these.
+#
+# Important note for defining defaults: This file is executed before the
+# BUILDCONFIG.gn file. That file sets up the global variables like "is_ios".
+# This means that the default_args can not depend on the platform,
+# architecture, or other build parameters.
+default_args = {
+  # Kept from upstream: //base and //mojo are compiled with the unsafe-buffers
+  # and warning-suppression plugin configuration, and the paths below are the
+  # allowlists those plugins read.
+  clang_unsafe_buffers_paths = "//build/config/unsafe_buffers_paths.txt"
+  clang_warning_suppression_file = "//build/config/warning_suppression.txt"
+
+  # Build crashpad against this tree's //base and //third_party/zlib rather
+  # than against mini_chromium. mini_chromium is a separate gclient DEPS entry
+  # that a Chromium checkout never syncs, so the alternative does not exist
+  # here. See //third_party/crashpad/crashpad/build/crashpad_buildconfig.gni.
+  crashpad_dependencies = "chromium"
+
+  # Required by this tree, not a preference. Both gate mojom code generation
+  # paths whose dependencies are not vendored here:
+  #   enable_mojom_blink_bindings -> the "_blink" variant and
+  #       //mojo/public/cpp/bindings:wtf_support pull
+  #       //third_party/blink/renderer/platform/wtf.
+  #   enable_mojom_js_bindings    -> //mojo/public/js pulls //ui/webui and
+  #       //tools/v8_context_snapshot -> //v8.
+  #
+  # Note these are deliberately NOT `use_blink = false`: that arg additionally
+  # strips process/launch.cc, process/kill.cc, process/memory.cc,
+  # sync_socket.cc and file_path_watcher.cc out of //base while leaving their
+  # *_win.cc counterparts compiled, which fails to link.
+  # See README.md, "Differences from upstream".
+  enable_mojom_blink_bindings = false
+  enable_mojom_js_bindings = false
+}
+
+# These are the list of GN files that run exec_script. This allowlist exists
+# to force additional review for new uses of exec_script, which is strongly
+# discouraged. See //build/dotfile_settings.gni for the //build entries.
+exec_script_allowlist =
+    build_dotfile_settings.exec_script_allowlist + [ "//build_overrides/build.gni" ]
+
+expand_directory_allowlist = build_dotfile_settings.expand_directory_allowlist

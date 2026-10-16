@@ -1,0 +1,14 @@
+# Copyright 2018 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+DEPS = [
+  "recipe_engine/json",
+  "recipe_engine/path",
+  "recipe_engine/raw_io",
+  "recipe_engine/step",
+  "recipe_engine/url",
+]
+
+from .api import Gitiles as API  # noqa: E402, F401
+from .test_api import GitilesTestApi as TEST_API  # noqa: E402, F401

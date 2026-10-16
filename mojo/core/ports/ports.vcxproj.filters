@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="event.cc" />
+    <ClCompile Include="message_queue.cc" />
+    <ClCompile Include="name.cc" />
+    <ClCompile Include="node.cc" />
+    <ClCompile Include="port.cc" />
+    <ClCompile Include="port_locker.cc" />
+    <ClCompile Include="port_ref.cc" />
+    <ClCompile Include="user_message.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="event.h" />
+    <None Include="message_filter.h" />
+    <None Include="message_queue.h" />
+    <None Include="name.h" />
+    <None Include="node.h" />
+    <None Include="node_delegate.h" />
+    <None Include="port.h" />
+    <None Include="port_locker.h" />
+    <None Include="port_ref.h" />
+    <None Include="user_data.h" />
+    <None Include="user_message.h" />
+  </ItemGroup>
+</Project>

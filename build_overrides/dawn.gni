@@ -1,0 +1,53 @@
+# Copyright 2018 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# This is this trimmed tree's own build_overrides, not vendored Dawn code --
+# edited freely to be self-consistent with what actually exists here. The
+# upstream Chromium version imports "//ui/gl/features.gni" and reads
+# use_static_angle from it; neither //ui/gl nor that arg exist in this tree
+# (no //ui/gl, no ANGLE), so that import is dropped.
+#
+# This tree builds Dawn D3D12-only (see gn args: dawn_enable_vulkan=false,
+# dawn_enable_opengles=false, dawn_enable_desktop_gl=false,
+# dawn_use_built_dxc=false). That keeps the Vulkan stack (headers/loader/
+# validation-layers/utility-libraries), SwiftShader, ANGLE, and DXC-from-
+# source all out of the dependency graph, so none of them need vendoring:
+#   - dawn_vulkan_*_dir / dawn_swiftshader_dir: only read behind
+#     `if (dawn_enable_vulkan)` / `if (use_swiftshader)` in Dawn's BUILD.gn
+#     (grepped across src/dawn), so "" is safe with those backends off.
+#   - dawn_angle_dir: src/dawn/native/BUILD.gn and src/dawn/tests/BUILD.gn
+#     unconditionally `import("${dawn_angle_dir}/gni/angle.gni")` regardless
+#     of backend, so it must point at *something* importable -- pointed at a
+#     tiny local stub (see build_overrides/dawn_angle_stub/gni/angle.gni)
+#     instead of vendoring the real ~4GB ANGLE checkout, since the one symbol
+#     Dawn reads from it (angle_libs_suffix) is itself only used behind
+#     `if (dawn_enable_opengl)`, which is off.
+#   - dawn_jsoncpp_dir: not referenced anywhere in Dawn's actual BUILD.gn
+#     graph (grepped), so "" is safe unconditionally.
+#   - Tint's SPIR-V reader/writer (tint_build_spv_reader/writer, set via GN
+#     args) are also turned off, so dawn_spirv_tools_dir is likewise unused
+#     and left "" rather than vendoring spirv-tools/spirv-headers.
+#   - dawn_dxheaders_dir: only read on `if (is_linux || is_mac)` inside
+#     directx-shader-compiler's own BUILD.gn, irrelevant on Windows; left
+#     pointed at Dawn's own bundled (empty on this checkout) submodule path,
+#     harmless since never read.
+
+# The paths to Dawn's dependencies
+dawn_angle_dir = "//build_overrides/dawn_angle_stub"
+dawn_glfw_dir = "//third_party/dawn/third_party/glfw3/src"
+dawn_googletest_dir = "//third_party/googletest/src"
+dawn_partition_alloc_dir = "//base/allocator/partition_allocator"
+dawn_jinja2_dir = "//third_party/jinja2"
+dawn_jsoncpp_dir = ""
+dawn_spirv_tools_dir = ""
+dawn_swiftshader_dir = ""
+dawn_vulkan_headers_dir = ""
+dawn_vulkan_loader_dir = ""
+dawn_vulkan_utility_libraries_dir = ""
+dawn_vulkan_validation_layers_dir = ""
+dawn_dxc_dir = "//third_party/dawn/third_party/directx-shader-compiler/src"
+dawn_dxc_gn_dir = "//third_party/dawn/third_party/directx-shader-compiler"
+dawn_dxheaders_dir = "//third_party/dawn/third_party/directx-headers/src"
+dawn_version_file = ""
+dawn_use_static_angle = false

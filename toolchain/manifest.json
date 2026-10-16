@@ -1,0 +1,65 @@
+[
+  {
+    "archive": "llvm-win.zip",
+    "destination": "third_party/llvm-build",
+    "files": 338,
+    "bytes": 133048314,
+    "sha256": "a2c316bafb14e5f8596fd55bf0b17922ca8487078292516889c508cb3739359e"
+  },
+  {
+    "archive": "rust-win.zip",
+    "destination": "third_party/rust-toolchain",
+    "files": 7054,
+    "bytes": 1121898514,
+    "sha256": "0563a52ef9cd1c0726d84a66fcf16146d6c5c4e3f1547137f1317ce02a72ce8f"
+  },
+  {
+    "archive": "go-win.zip",
+    "destination": "third_party/dawn/tools/golang",
+    "files": 22064,
+    "bytes": 125674960,
+    "sha256": "f1620d72bc253481d20c4de3de42d5a40c52fe33117adfbd4db445e2303b4de9"
+  },
+  {
+    "archive": "depot-cipd-win.zip",
+    "destination": "depot_tools/.cipd_bin",
+    "files": 3682,
+    "bytes": 242075591,
+    "sha256": "6687bfdd2910b2a56139057079ede5f2988aee57180b7e7452c494871950d098"
+  },
+  {
+    "archive": "depot-external-win.zip",
+    "destination": "depot_tools/external_bin",
+    "files": 3352,
+    "bytes": 14928879,
+    "sha256": "4833508885751931a0dd49d3d27f87bf02f7a79054adc53611d43ef2d2e76016"
+  },
+  {
+    "archive": "python-win.zip",
+    "destination": "depot_tools/bootstrap-2@3_11_8_chromium_35_bin",
+    "files": 1912,
+    "bytes": 18965010,
+    "sha256": "34c40fe629de80ef9a818bc40242ec70eac8939cf3a9e3f7cee6c0e4d04ce3f4"
+  },
+  {
+    "archive": "gn-win.zip",
+    "destination": "buildtools/win",
+    "files": 3,
+    "bytes": 2047199,
+    "sha256": "109d5ad7c378b7751e3658277ba717fc2177aee386245dc2e74746b305601f18"
+  },
+  {
+    "archive": "ninja-win.zip",
+    "destination": "third_party/ninja",
+    "files": 3,
+    "bytes": 303347,
+    "sha256": "814a74680a150d1543a753b0a3695b1b7602a9efa9922f3d94e64f3e881887ed"
+  },
+  {
+    "archive": "rc-win.zip",
+    "destination": "build/toolchain/win/rc/win",
+    "files": 2,
+    "bytes": 265718,
+    "sha256": "b716de83f70e86b79c0515b1d461d7b6b793d4344fa1e0a699010833a5f077eb"
+  }
+]

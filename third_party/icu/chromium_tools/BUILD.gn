@@ -1,0 +1,21 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# PORT: not upstream. A new directory rather than an edit to icu/BUILD.gn, so
+# scripts/upstream_diff.ps1 sees it as an addition, not a modification.
+
+import("//third_party/icu/icupkg.gni")
+
+icu_package_tool("icupkg") {
+}
+
+executable("verify_trim") {
+  testonly = true
+  sources = [ "verify_trim.cc" ]
+  deps = [
+    "//base",
+    "//base:i18n",
+    "//third_party/icu",
+  ]
+}

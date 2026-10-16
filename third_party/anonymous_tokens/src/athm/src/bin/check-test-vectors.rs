@@ -1,0 +1,140 @@
+use athm::{
+    Decodable, Encodable, Params, PrivateKey, PublicKey, PublicKeyProof, Token, TokenContext,
+    TokenRequest, TokenResponse,
+};
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
+
+#[derive(Deserialize)]
+struct TestVector {
+    procedure: String,
+    args: BTreeMap<String, String>,
+    output: BTreeMap<String, String>,
+}
+
+trait FromHex {
+    fn from_hex(input: &str) -> Result<Self, String>
+    where
+        Self: Sized;
+}
+
+impl<T: Decodable + Sized> FromHex for T {
+    fn from_hex(input: &str) -> Result<T, String> {
+        Ok(T::decode(&hex::decode(input).map_err(|e| format!("Failed to decode hex: {}", e))?)?)
+    }
+}
+
+fn main() {
+    let json_file = std::env::args().nth(1).unwrap_or("test_vectors.json".to_string());
+    let test_vectors: Vec<TestVector> = serde_json::from_reader(
+        std::fs::File::open(&json_file)
+            .map_err(|e| format!("Failed to open file {}: {}", &json_file, e))
+            .unwrap(),
+    )
+    .map_err(|e| format!("Failed to parse JSON: {}", e))
+    .unwrap();
+
+    // Extract deployment ID and check params.
+    let params_tv = test_vectors.iter().find(|tv| tv.procedure == "params").unwrap();
+    let deployment_id = params_tv.output.get("deployment_id").unwrap();
+    let n_buckets = params_tv.output.get("n_buckets").unwrap().parse::<u8>().unwrap();
+    let params = Params::new(n_buckets, deployment_id.clone().into_bytes()).unwrap();
+    // Compare generators by their encoded bytes, since the concrete point type
+    // depends on the active backend (rustcrypto vs boringssl).
+    let mut big_g_bytes = vec![];
+    params.big_g.encode(&mut big_g_bytes);
+    assert_eq!(big_g_bytes, hex::decode(params_tv.output.get("generator_g").unwrap()).unwrap());
+    let mut big_h_bytes = vec![];
+    params.big_h.encode(&mut big_h_bytes);
+    assert_eq!(big_h_bytes, hex::decode(params_tv.output.get("generator_h").unwrap()).unwrap());
+    println!("params: OK");
+
+    // Check all remaining test vectors.
+    for test_vector in &test_vectors {
+        let procedure = test_vector.procedure.as_str();
+        match procedure {
+            "params" => {
+                // Already checked above.
+            }
+            "key_gen" => {
+                let public_key =
+                    PublicKey::from_hex(test_vector.output.get("public_key").unwrap()).unwrap();
+                let public_key_proof =
+                    PublicKeyProof::from_hex(test_vector.output.get("public_key_proof").unwrap())
+                        .unwrap();
+                assert!(athm::verify_public_key_proof(&public_key, &public_key_proof, &params));
+                let mut public_key_bytes = vec![];
+                public_key.encode(&mut public_key_bytes);
+                let expected_key_id = hex::encode(Sha256::digest(&public_key_bytes));
+                let key_id = test_vector.output.get("key_id").unwrap();
+                assert_eq!(key_id, &expected_key_id);
+                println!("{}: OK", procedure);
+            }
+            "token_request" => {
+                let public_key =
+                    PublicKey::from_hex(test_vector.args.get("public_key").unwrap()).unwrap();
+                let public_key_proof =
+                    PublicKeyProof::from_hex(test_vector.args.get("public_key_proof").unwrap())
+                        .unwrap();
+                // Ignore output, just checking that the proofs pass.
+                let _ = athm::token_request(&public_key, &public_key_proof, &params).unwrap();
+                println!("{}: OK", procedure);
+            }
+            "token_response" => {
+                let private_key =
+                    PrivateKey::from_hex(test_vector.args.get("private_key").unwrap()).unwrap();
+                let public_key =
+                    PublicKey::from_hex(test_vector.args.get("public_key").unwrap()).unwrap();
+                let token_request =
+                    TokenRequest::from_hex(test_vector.args.get("token_request").unwrap()).unwrap();
+                let hidden_metadata =
+                    test_vector.args.get("hidden_metadata").unwrap().parse::<u8>().unwrap();
+                let _ = athm::token_response(
+                    &private_key,
+                    &public_key,
+                    &token_request,
+                    hidden_metadata,
+                    &params,
+                )
+                .unwrap();
+                println!("{}: OK", procedure);
+            }
+            "finalize_token" => {
+                let public_key =
+                    PublicKey::from_hex(test_vector.args.get("public_key").unwrap()).unwrap();
+                let token_request =
+                    TokenRequest::from_hex(test_vector.args.get("token_request").unwrap()).unwrap();
+                let token_context =
+                    TokenContext::from_hex(test_vector.args.get("token_context").unwrap()).unwrap();
+                let token_response = TokenResponse::decode(
+                    &hex::decode(test_vector.args.get("token_response").unwrap()).unwrap(),
+                    &params,
+                )
+                .unwrap();
+                let _ = athm::finalize_token(
+                    &token_context,
+                    &public_key,
+                    &token_request,
+                    &token_response,
+                    &params,
+                )
+                .unwrap();
+                println!("{}: OK", procedure);
+            }
+            "verify_token" => {
+                let private_key =
+                    PrivateKey::from_hex(test_vector.args.get("private_key").unwrap()).unwrap();
+                let token = Token::from_hex(test_vector.args.get("token").unwrap()).unwrap();
+                let expected_hidden_metadata =
+                    test_vector.output.get("hidden_metadata").unwrap().parse::<u8>().unwrap();
+                let hidden_metadata = athm::verify_token(&private_key, &token, &params).unwrap();
+                assert_eq!(hidden_metadata, expected_hidden_metadata);
+                println!("{}: OK", procedure);
+            }
+            _ => {
+                println!("Ignoring procedure: {}", procedure);
+            }
+        }
+    }
+}

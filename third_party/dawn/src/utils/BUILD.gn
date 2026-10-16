@@ -1,0 +1,448 @@
+# Copyright 2024 The Dawn & Tint Authors
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+###############################################################################
+# Utils library
+###############################################################################
+
+import("../../scripts/dawn_features.gni")
+import("../../scripts/dawn_overrides_with_defaults.gni")
+
+import("//build_overrides/build.gni")
+import("${dawn_root}/scripts/dawn_nocompile.gni")
+
+# Use Chromium's dcheck_always_on when available so that we respect it when
+# running tests on the GPU builders
+if (build_with_chromium) {
+  import("//build/config/dcheck_always_on.gni")
+} else {
+  dcheck_always_on = false
+}
+
+if (build_with_chromium) {
+  import("//build/config/sanitizers/sanitizers.gni")
+} else {
+  use_fuzzing_engine = false
+}
+
+# Centralized config for -Weverything and its suppressions.
+config("dawn_warnings") {
+  if (dawn_weverything) {
+    assert(is_clang)
+
+    cflags = [ "-Weverything" ]
+
+    # Suppressions
+    # Warnings we'll never enable.
+    cflags += [
+      "-Wno-c++98-compat",
+      "-Wno-c++98-compat-pedantic",
+      "-Wno-pre-c++14-compat",
+      "-Wno-pre-c++17-compat",
+      "-Wno-pre-c++20-compat",
+      "-Wno-padded",
+      "-Wno-c++20-extensions",
+
+      # This warning complains on normal usages of structs, especially in
+      # Vulkan, and pushes developers away from using designated initializers.
+      "-Wno-missing-designated-field-initializers",
+    ]
+
+    # TODO(crbug.com/523358231): triage these warnings and determine whether
+    # they're warnings we definitely don't want, or warnings we want to try to
+    # enable, or warnings that we can't currently enable for some reason
+    cflags += [
+      "-Wno-zero-as-null-pointer-constant",
+      "-Wno-old-style-cast",
+      "-Wno-sign-conversion",
+      "-Wno-implicit-int-conversion",
+      "-Wno-double-promotion",
+      "-Wno-global-constructors",
+      "-Wno-exit-time-destructors",
+      "-Wno-disabled-macro-expansion",
+      "-Wno-switch-enum",
+      "-Wno-unused-template",
+      "-Wno-covered-switch-default",
+      "-Wno-missing-prototypes",
+
+      # The lifetime-safety-* warnings are part of an experimental analysis.
+      # Many individual diagnostics (like
+      # -Wlifetime-safety-lifetimebound-violation) are not yet mapped to
+      # toggleable warning flags, so we suppress the entire group and disable
+      # the analysis pass.
+      "-Wno-lifetime-safety",
+      "-Wno-lifetime-safety-all",
+      "-Xclang",
+      "-fno-lifetime-safety-inference",
+      "-Xclang",
+      "-fno-experimental-lifetime-safety-tu-analysis",
+      "-Wno-switch-default",
+      "-Wno-undefined-func-template",
+      "-Wno-weak-vtables",
+      "-Wno-implicit-float-conversion",
+      "-Wno-nullable-to-nonnull-conversion",
+      "-Wno-float-equal",
+      "-Wno-shadow-header",
+      "-Wno-c2y-extensions",
+      "-Wno-documentation-unknown-command",
+      "-Wno-documentation",
+      "-Wno-nrvo",
+      "-Wno-non-virtual-dtor",
+      "-Wno-reserved-identifier",
+      "-Wno-unused-member-function",
+      "-Wno-tautological-type-limit-compare",
+      "-Wno-unsafe-buffer-usage",
+      "-Wno-nonportable-system-include-path",
+    ]
+
+    # Per file scope warning suppressions goes into
+    # warning_suppression_mappings.txt
+    cflags +=
+        [ "--warning-suppression-mappings=" +
+          rebase_path("warning_suppression_mappings.txt", root_build_dir) ]
+  } else {
+    cflags = []
+
+    # Allowlist of warnings that are not part of -Wall or -Wextra.
+    if (dawn_standalone && is_clang) {
+      cflags += [
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic",
+        "-Wconditional-uninitialized",
+        "-Wcstring-format-directive",
+        "-Wctad-maybe-unsupported",
+        "-Wc++11-narrowing",
+        "-Wdeprecated-copy",
+        "-Wdeprecated-copy-dtor",
+        "-Wduplicate-enum",
+        "-Wextra-semi",
+        "-Wextra-semi-stmt",
+        "-Wimplicit-fallthrough",
+        "-Winconsistent-missing-destructor-override",
+        "-Winvalid-offsetof",
+        "-Wmissing-field-initializers",
+        "-Wnon-c-typedef-for-linkage",
+        "-Wpessimizing-move",
+        "-Wrange-loop-analysis",
+        "-Wredundant-move",
+        "-Wshadow-field",
+        "-Wstrict-prototypes",
+        "-Wsuggest-destructor-override",
+        "-Wsuggest-override",
+        "-Wtautological-unsigned-zero-compare",
+        "-Wunreachable-code-aggressive",
+        "-Wunused-but-set-variable",
+        "-Wunused-macros",
+
+        # TODO(crbug.com/523358231): triage these flags not applied properly
+        # when added in a dependency target.
+        "-Wno-c2y-extensions",
+        "-Wno-unused-parameter",
+        "-Wno-dollar-in-identifier-extension",
+      ]
+    }
+  }
+
+  if (is_clang) {
+    # Treat third_party and gen headers as system headers to suppress warnings.
+    # The path needs to be the literal beginning of the string in the #include
+    # directive, so include path resolving to different names is added
+    # separately.
+    _prefixes = [
+      "third_party/",
+      "absl/",
+      "benchmark/",
+      "glslang/",
+      "gmock/",
+      "gtest/",
+      "KHR/",
+      "partition_alloc/",
+      "napi.h",
+      "testing/",
+      "vulkan/",
+
+      # TODO(crbug.com/523358231): It's good to enable warnings for generated
+      # code. Currently, removing this results in many warnings in generated
+      # webgpu_cpp.h.
+      "dawn/webgpu_cpp.h",
+      "webgpu/webgpu_cpp.h",
+    ]
+    foreach(_prefix, _prefixes) {
+      if (is_win) {
+        # When building with clang-cl on Windows, the driver only accepts
+        # MSVC-style flags. We use -Xclang to pass the standard Clang
+        # --system-header-prefix flag directly to the compiler engine.
+        cflags += [
+          "-Xclang",
+          "--system-header-prefix=${_prefix}",
+        ]
+      } else {
+        cflags += [ "--system-header-prefix=${_prefix}" ]
+      }
+    }
+  }
+}
+
+config("internal_config") {
+  include_dirs = [ "${dawn_root}" ]
+
+  defines = []
+  configs = [ ":dawn_warnings" ]
+
+  if (is_clang && dawn_standalone && !is_wasm) {
+    configs += [ ":raw_ptr_check" ]
+  }
+
+  if (dawn_always_assert || dcheck_always_on || is_debug ||
+      use_fuzzing_engine) {
+    defines += [ "DAWN_ENABLE_ASSERTS" ]
+  }
+
+  if (build_with_chromium || use_fuzzing_engine) {
+    # Does a hard abort when an assertion fails so that fuzzers catch and parse
+    # the failure. Also call abort() so chrome can dump crash stack in console.
+    defines += [ "DAWN_ABORT_ON_ASSERT" ]
+  }
+
+  if (use_fuzzing_engine) {
+    # Disable logging to make fuzzing more efficient.
+    defines += [ "DAWN_DISABLE_LOGGING" ]
+  }
+
+  # OS_CHROMEOS cannot be autodetected in runtime and
+  # cannot be detected with regular compiler macros either.
+  # Inject it from the build system
+  if (is_chromeos) {
+    defines += [ "DAWN_OS_CHROMEOS" ]
+  }
+}
+
+static_library("utils") {
+  sources = [
+    "assert.cc",
+    "assert.h",
+    "compiler.h",
+    "force_crash.h",
+    "log.cc",
+    "log.h",
+    "non_copyable.h",
+    "non_movable.h",
+    "numeric.h",
+    "placeholder.cc",
+    "platform.h",
+    "span.h",
+    "typed_integer.h",
+    "underlying_type.h",
+  ]
+
+  if (is_win) {
+    sources += [ "windows_with_undefs.h" ]
+  }
+
+  public_configs = [ ":internal_config" ]
+}
+
+source_set("crash_handler") {
+  sources = [
+    "crash_handler.cc",
+    "crash_handler.h",
+  ]
+  public_configs = [ ":internal_config" ]
+  deps = [ "${dawn_root}:abseil" ]
+}
+
+dawn_nocompile_source_set("nocompile_sources") {
+  deps = [ ":utils" ]
+  sources = [
+    "numeric_nocompile.nc",
+    "span_nocompile.nc",
+    "typed_integer_nocompile.nc",
+  ]
+  if (dawn_weverything) {
+    sources += [ "warning_nocompile.nc" ]
+  }
+}
+
+# Included in dawn_unittests.
+source_set("unittests") {
+  testonly = true
+
+  deps = [
+    ":gmock_and_gtest",
+    ":nocompile_sources",
+    ":utils",
+    "${dawn_root}/src/dawn/partition_alloc:raw_ptr",
+  ]
+
+  sources = [
+    "assert_test.cc",
+    "numeric_test.cc",
+    "span_tests.cc",
+    "typed_integer_tests.cc",
+    "underlying_type_tests.cc",
+  ]
+}
+
+###############################################################################
+# Gtest Gmock - Handle building inside and outside of Chromium.
+###############################################################################
+
+# When building outside of Chromium we need to define our own targets for GTest
+# and GMock. However when compiling inside of Chromium we need to reuse the
+# existing targets, both because Chromium has a special harness for swarming
+# and because otherwise the "gn check" fails.
+
+if (build_with_chromium) {
+  # When we are in Chromium we reuse its targets, and also add some deps that
+  # are needed to launch the test in swarming mode.
+  group("gmock_and_gtest_only") {
+    testonly = true
+    public_deps = [
+      "//base",
+      "//base/test:test_support",
+      "//testing/gmock",
+      "//testing/gtest",
+    ]
+  }
+} else {
+  # When we aren't in Chromium we define out own targets based on the location
+  # of the googletest repo.
+  googletest_dir = dawn_googletest_dir
+
+  config("gtest_config") {
+    include_dirs = [
+      "${googletest_dir}/googletest",
+      "${googletest_dir}/googletest/include",
+    ]
+  }
+
+  static_library("gtest") {
+    testonly = true
+    sources = [ "${googletest_dir}/googletest/src/gtest-all.cc" ]
+    public_configs = [ ":gtest_config" ]
+  }
+
+  config("gmock_config") {
+    include_dirs = [
+      "${googletest_dir}/googlemock",
+      "${googletest_dir}/googlemock/include",
+      "${googletest_dir}/googletest/include",
+    ]
+    if (dawn_standalone && is_clang) {
+      cflags = [
+        # gmock emits deprecated-copy-dtor warnings when using
+        # ::testing::Combine
+        "-Wno-deprecated-copy-dtor",
+      ]
+    }
+  }
+
+  static_library("gmock") {
+    testonly = true
+    sources = [ "${googletest_dir}/googlemock/src/gmock-all.cc" ]
+    public_configs = [ ":gmock_config" ]
+  }
+
+  group("gmock_and_gtest_only") {
+    testonly = true
+    public_deps = [
+      ":gmock",
+      ":gtest",
+    ]
+  }
+
+  static_library("gmock_main") {
+    testonly = true
+    sources = [ "${googletest_dir}/googlemock/src/gmock_main.cc" ]
+    public_deps = [ ":gmock_and_gtest_only" ]
+  }
+}
+
+source_set("gmock_and_gtest") {
+  testonly = true
+  public_deps = [ ":gmock_and_gtest_only" ]
+
+  # Dawn's gtest utils.
+  sources = [ "gtest.h" ]
+}
+
+###############################################################################
+# Additional clang plugin for raw_ptr and unsafe-buffers
+###############################################################################
+
+# Helper template to define clang plugins.
+#
+# Params:
+#   plugin: The name of the clang plugin to load.
+#   plugin_arguments: List of arguments to pass to the plugin.
+template("clang_plugin") {
+  config(target_name) {
+    cflags = [
+      "-Xclang",
+      "-add-plugin",
+      "-Xclang",
+      invoker.plugin,
+    ]
+
+    foreach(flag, invoker.plugin_arguments) {
+      cflags += [
+        "-Xclang",
+        "-plugin-arg-${invoker.plugin}",
+        "-Xclang",
+        flag,
+      ]
+    }
+  }
+}
+
+# Check struct/class member pointers are using raw_ptr<> where appropriate.
+clang_plugin("raw_ptr_check") {
+  # Defined in <chromium>/tools/clang/raw_ptr_plugin/RawPtrPlugin.cpp
+  plugin = "raw-ptr-plugin"
+
+  plugin_arguments = [
+    "check-raw-ptr-fields",
+    "check-raw-ptr-to-stack-allocated",
+    "check-raw-ref-fields",
+    "check-span-fields",
+  ]
+
+  _exclusions = [
+    "/include/",
+    "/src/tint/",
+    "/src/dawn/replay/",
+
+    # TODO(479743213): Enforce raw_ptr usage in dawn/node as well.
+    "/src/dawn/node/",
+  ]
+
+  foreach(dir, _exclusions) {
+    plugin_arguments += [ "raw-ptr-exclude-path=" +
+                          rebase_path("${dawn_root}/${dir}", root_build_dir) ]
+  }
+}

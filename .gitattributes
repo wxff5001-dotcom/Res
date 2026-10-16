@@ -1,0 +1,2 @@
+* -text
+/toolchain/*.zip filter=lfs diff=lfs merge=lfs -text

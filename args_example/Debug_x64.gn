@@ -1,0 +1,3 @@
+is_debug = true
+is_component_build = true
+target_cpu = "x64"

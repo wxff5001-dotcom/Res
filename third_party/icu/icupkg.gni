@@ -1,0 +1,79 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# PORT: not upstream. Chromium ships prebuilt icudtl.dat variants and never
+# builds ICU's data tools, so there is no GN target for icupkg. This adds one.
+#
+# icupkg edits an existing .dat package: list its items, remove some, write a
+# new package. That is what makes trimming possible without running ICU's full
+# data build, which needs a Unix toolchain and hours.
+
+# Builds icupkg for the host so a build step can run it.
+template("icu_package_tool") {
+  not_needed([ "invoker" ])
+
+  executable(target_name) {
+    sources = [
+      "//third_party/icu/source/tools/icupkg/icupkg.cpp",
+
+      # toolutil, which icupkg links against. Only the pieces the package
+      # editor needs; the code generators and parsers are left out.
+      "//third_party/icu/source/tools/toolutil/filestrm.cpp",
+      "//third_party/icu/source/tools/toolutil/filetools.cpp",
+      "//third_party/icu/source/tools/toolutil/package.cpp",
+      "//third_party/icu/source/tools/toolutil/pkg_gencmn.cpp",
+      "//third_party/icu/source/tools/toolutil/pkg_icu.cpp",
+      "//third_party/icu/source/tools/toolutil/pkgitems.cpp",
+      "//third_party/icu/source/tools/toolutil/swapimpl.cpp",
+      "//third_party/icu/source/tools/toolutil/toolutil.cpp",
+      "//third_party/icu/source/tools/toolutil/ucbuf.cpp",
+      "//third_party/icu/source/tools/toolutil/ucm.cpp",
+      "//third_party/icu/source/tools/toolutil/ucmstate.cpp",
+      "//third_party/icu/source/tools/toolutil/unewdata.cpp",
+      "//third_party/icu/source/tools/toolutil/uoptions.cpp",
+      "//third_party/icu/source/tools/toolutil/uparse.cpp",
+    ]
+
+    include_dirs = [
+      "//third_party/icu/source/common",
+      "//third_party/icu/source/i18n",
+      "//third_party/icu/source/tools/toolutil",
+    ]
+
+    defines = [
+      # icupkg is a plain executable with no exported symbols, so none of the
+      # U_*_IMPLEMENTATION macros apply -- those select dllexport for a
+      # component being built as a DLL. utypes.h's #elif chain only honours
+      # the first one defined, so setting several at once (tried first) picks
+      # the wrong one silently instead of erroring. U_STATIC_IMPLEMENTATION
+      # collapses every U_*_API macro to empty, which is what a static link
+      # into an .exe needs.
+      "U_STATIC_IMPLEMENTATION",
+
+      # toolutil.cpp separately #errors unless this is set, regardless of
+      # what U_STATIC_IMPLEMENTATION resolves U_TOOLUTIL_API to.
+      "U_TOOLUTIL_IMPLEMENTATION",
+    ]
+
+    deps = [
+      "//third_party/icu:icui18n",
+      "//third_party/icu:icuuc",
+    ]
+
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+
+    cflags = [
+      "-Wno-unsafe-buffer-usage",
+      "-Wno-unused-function",
+      "-Wno-deprecated-declarations",
+      "-Wno-sign-compare",
+      "-Wno-shadow",
+      "-Wno-extra-semi",
+      "-Wno-format",
+      "-Wno-parentheses",
+      "-Wno-macro-redefined",
+    ]
+  }
+}

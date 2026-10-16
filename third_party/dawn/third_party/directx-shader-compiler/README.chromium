@@ -1,0 +1,10 @@
+Name: DirectX-Shader-Compiler
+Short Name: DXC
+URL: https://github.com/microsoft/DirectX-Shader-Compiler
+Update Mechanism: Autoroll
+Security Critical: yes
+Version: N/A
+Revision: 02e491eb019766b866bcf09c427365713353841b
+License: bcrypt-solar-designer, bsd-3-clause, gpl-2.0-with-autoconf-exception, isc, mit, ncsa, spencer-86, unicode_org, unlicense
+License File: LICENSE
+Shipped: yes

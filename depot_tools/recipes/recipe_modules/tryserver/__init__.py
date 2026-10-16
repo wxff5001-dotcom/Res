@@ -1,0 +1,22 @@
+# Copyright 2014 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+
+DEPS = [
+  "gerrit",
+  "git",
+  "git_cl",
+  "recipe_engine/buildbucket",
+  "recipe_engine/context",
+  "recipe_engine/json",
+  "recipe_engine/led",
+  "recipe_engine/path",
+  "recipe_engine/platform",
+  "recipe_engine/properties",
+  "recipe_engine/raw_io",
+  "recipe_engine/step",
+]
+
+from .api import TryserverApi as API  # noqa: E402, F401
+from .test_api import TryserverTestApi as TEST_API  # noqa: E402, F401

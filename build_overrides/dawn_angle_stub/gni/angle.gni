@@ -1,0 +1,14 @@
+# Minimal stand-in for ANGLE's own gni/angle.gni.
+#
+# Dawn's src/dawn/native/BUILD.gn and src/dawn/tests/BUILD.gn unconditionally
+# do `import("${dawn_angle_dir}/gni/angle.gni")` before any backend is known
+# to be enabled or disabled, so the import must resolve even though this repo
+# does not vendor ANGLE (no GL/GLES-over-ANGLE passthrough backend is built
+# here -- D3D12 only). The one symbol Dawn reads from the real file,
+# angle_libs_suffix, is only used inside `if (dawn_enable_opengl)` /
+# `if (dawn_enable_opengles)` blocks, which are compiled out by
+# dawn_enable_opengles=false / dawn_enable_desktop_gl=false in the GN args
+# this tree builds with -- so a definition is enough, its value is unused.
+declare_args() {
+  angle_libs_suffix = ""
+}

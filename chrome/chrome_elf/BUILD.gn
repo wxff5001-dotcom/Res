@@ -1,0 +1,31 @@
+# Copyright 2015 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Chrome elf targets (excepting tests) should only link in kernel32.
+# Please don't add dependencies on any other system libraries.
+
+import("//build/config/compiler/compiler.gni")
+import("//build/config/win/manifest.gni")
+import("//chrome/process_version_rc_template.gni")
+import("//testing/test.gni")
+
+
+# PORT: trimmed to :nt_registry, the only target this tree uses (via
+# //chrome/install_static). Everything else -- chrome_elf.dll itself, the
+# crash, security and third_party_dlls source sets and all tests -- depends
+# on //chrome/common, //components/crash/core/app and //sandbox, none of
+# which are vendored here.
+
+static_library("nt_registry") {
+  sources = [
+    "nt_registry/nt_registry.cc",
+    "nt_registry/nt_registry.h",
+    "nt_registry/nt_registry_functions.h",
+  ]
+
+  libs = [
+    "kernel32.lib",
+    "ntdll.lib",
+  ]
+}

@@ -1,0 +1,99 @@
+# Copyright 2014 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//base/win/embedded_i18n/generate_embedded_i18n.gni")
+import("//build/config/chrome_build.gni")
+
+import("//testing/test.gni")
+
+if (is_win) {
+  source_set("metainstaller_utils") {
+    sources = [
+      "delete_after_reboot_helper.cc",
+      "delete_after_reboot_helper.h",
+      "lzma_util.cc",
+      "lzma_util.h",
+      "self_cleaning_temp_dir.cc",
+      "self_cleaning_temp_dir.h",
+      "unbuffered_file_writer.cc",
+      "unbuffered_file_writer.h",
+    ]
+    deps = [ "//third_party/lzma_sdk/google:seven_zip_reader" ]
+    public_deps = [
+      "//base",
+      "//third_party/abseil-cpp:absl",
+    ]
+  }
+
+  source_set("work_item") {
+    sources = [
+      "callback_work_item.cc",
+      "callback_work_item.h",
+      "conditional_work_item.cc",
+      "conditional_work_item.h",
+      "copy_tree_work_item.cc",
+      "copy_tree_work_item.h",
+      "create_dir_work_item.cc",
+      "create_dir_work_item.h",
+      "create_reg_key_work_item.cc",
+      "create_reg_key_work_item.h",
+      "delete_reg_key_work_item.cc",
+      "delete_reg_key_work_item.h",
+      "delete_reg_value_work_item.cc",
+      "delete_reg_value_work_item.h",
+      "delete_tree_work_item.cc",
+      "delete_tree_work_item.h",
+      "duplicate_tree_detector.cc",
+      "duplicate_tree_detector.h",
+      "file_conductor.cc",
+      "file_conductor.h",
+      "install_service_work_item.cc",
+      "install_service_work_item.h",
+      "install_service_work_item_impl.cc",
+      "install_service_work_item_impl.h",
+      "move_tree_work_item.cc",
+      "move_tree_work_item.h",
+      "registry_key_backup.cc",
+      "registry_key_backup.h",
+      "registry_util.cc",
+      "registry_util.h",
+      "set_reg_value_work_item.cc",
+      "set_reg_value_work_item.h",
+      "work_item.cc",
+      "work_item.h",
+      "work_item_list.cc",
+      "work_item_list.h",
+    ]
+    public_deps = [ "//base" ]
+  }
+}
+
+# PORT: everything below the original line 70 was dropped except the
+# self-contained targets. :with_no_strings, :with_rc_strings, :strings and
+# :generate_strings pull //components/metrics, //content, //net, //ui and
+# grit-generated Chrome branding strings, none of which are vendored here.
+# The test targets went with them because they all link :with_no_strings.
+
+source_set("constants") {
+  public = [ "initial_preferences_constants.h" ]
+
+  sources = []
+
+  if (is_win) {
+    public += [
+      "google_update_constants.h",
+      "util_constants.h",
+    ]
+
+    sources += [
+      "google_update_constants.cc",
+      "util_constants.cc",
+    ]
+
+    public_deps = [ "//base" ]
+  }
+}
+
+# PORT: :isolation_support and :did_run_support were dropped with
+# //chrome/install_static; see //BUILD.gn, installer_libs.

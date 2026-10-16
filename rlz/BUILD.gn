@@ -1,0 +1,44 @@
+# Copyright 2026 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# PORT: trimmed to machine_id. Upstream //rlz builds the whole RLZ financial
+# ping library (network access, ChromeOS DBus, a value store); none of that is
+# vendored here.
+#
+# The machine id is SHA1 of the computer account SID, plus the system volume
+# serial number, plus a CRC8 check byte. It survives swapping a data disk and
+# survives cloning the system volume to different hardware; it changes when
+# Windows is reinstalled or the system volume is reformatted.
+
+import("//testing/test.gni")
+
+static_library("machine_id") {
+  sources = [
+    "lib/assert.cc",
+    "lib/assert.h",
+    "lib/crc8.cc",
+    "lib/crc8.h",
+    "lib/machine_id.cc",
+    "lib/machine_id.h",
+    "lib/string_utils.cc",
+    "lib/string_utils.h",
+  ]
+
+  if (is_win) {
+    sources += [ "win/lib/machine_id_win.cc" ]
+  }
+
+  public_deps = [ "//base" ]
+}
+
+test("rlz_machine_id_unittests") {
+  sources = [ "lib/machine_id_port_unittest.cc" ]
+  deps = [
+    ":machine_id",
+    "//base",
+    "//base/test:run_all_unittests",
+    "//base/test:test_support",
+    "//testing/gtest",
+  ]
+}
